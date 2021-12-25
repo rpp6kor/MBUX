@@ -1,0 +1,2 @@
+add_library(weather_intent sources/weather_facts.cpp)
+target_include_directories(weather_intent PUBLIC headers/)
