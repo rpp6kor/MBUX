@@ -4,10 +4,16 @@ project(MBITION)
 
 set(CMAKE_CXX_STANDARD 14)
 
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+
+find_package(Threads REQUIRED)
+
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_directories(${PROJECT_NAME} PUBLIC weather_intent_lib)
-add_subdirectory(weather_intent_lib)
-target_link_libraries(${PROJECT_NAME} weather_intent)
+target_link_directories(${PROJECT_NAME} PUBLIC intent_recognition_lib)
+add_subdirectory(intent_recognition_lib)
+
+target_link_libraries(${PROJECT_NAME} speech_services Threads::Threads)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -20,17 +26,30 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(
-  weather_intent_test
-  tests/test_weather_intent.cpp
+  intent_recognition_test
+  tests/test_intent_recognition.cpp
 )
 
-include_directories(weather_intent_lib)
+add_executable(
+  speech_service_test
+  tests/test_speech_service.cpp
+)
+
+include_directories(intent_recognition_lib)
 
 target_link_libraries(
-  weather_intent_test
+  intent_recognition_test
   gtest_main
-  weather_intent
+  intent_recognition
+)
+
+target_link_libraries(
+  speech_service_test
+  gtest_main
+  gmock_main
+  speech_services
 )
 
 include(GoogleTest)
-gtest_discover_tests(weather_intent_test)
+gtest_discover_tests(intent_recognition_test)
+

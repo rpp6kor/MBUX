@@ -1,16 +1,36 @@
+#include "speech_service.h"
+#include <atomic>
+#include <csignal>
 #include <iostream>
 #include <memory>
-#include "weather_facts.h"
+#include <mutex>
+#include <thread>
 
+namespace {
+std::atomic_bool exit_requested{false};
+std::mutex mtx{};
 
-int main()
-{
-    std::string question;
-    std::cout << "Enter question" << std::endl;
-    std::getline(std::cin, question);
+void SignalHandler(int signum) {
+  std::cout << "Signal handler called with signal : " << signum << std::endl;
+  std::lock_guard<std::mutex> lock{mtx};
+  exit_requested.store(true);
+}
 
-    std::unique_ptr<weather_recognition::IWeatherRecognition> whether_recogniser = std::make_unique<weather_recognition::WeatherRecognition>();
-    std::cout << whether_recogniser->GetWeatherRecognisedIntent(question) << std::endl;
+} // namespace
 
-    return 0;
+int main() {
+  using SpeechService = intent_recognition::SpeechService;
+
+  // Register signal handler
+  signal(SIGINT, SignalHandler);
+  SpeechService speech_service{exit_requested};
+
+  auto th = std::thread([&speech_service]() { speech_service.GetIntent(); });
+
+  if (th.joinable()) {
+    th.join();
+    std::cout << "Returned from other thread..." << std::endl;
+  }
+
+  return 0;
 }
